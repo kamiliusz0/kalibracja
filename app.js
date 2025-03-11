@@ -1,5 +1,5 @@
 /******************************************************
- * 1. Elementy DOM i podstawowe zmienne
+ * 1. Elementy DOM i ustawienia
  ******************************************************/
 const video = document.getElementById('camera');
 const canvas = document.getElementById('grid');
@@ -7,12 +7,12 @@ const ctx = canvas.getContext('2d');
 const scanButton = document.getElementById('scanButton');
 const colorResults = document.getElementById('colorResults');
 
-// Ustalmy parametry rysowania siatki 3x3
+// Rozmiar siatki
 const gridSize = 3;
 const cellSize = canvas.width / gridSize;  // np. 360 / 3 = 120
-// Ewentualnie margin, jeżeli chcesz używać innego systemu
+// Możesz ewentualnie dodać margines (margin), ale tutaj upraszczamy
 
-// Ustawienia kamery
+// Ustawienia kamery = wielkość płótna
 const cameraWidth = canvas.width;
 const cameraHeight = canvas.height;
 
@@ -22,10 +22,14 @@ const cameraHeight = canvas.height;
  ******************************************************/
 async function startCamera() {
   try {
-    // Używamy domyślnie tylnej kamery, jeśli dostępna
+    // facingMode: "environment" - tylna kamera (o ile dostępna)
     const constraints = { video: { facingMode: "environment" } };
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
+
+    // Niektóre przeglądarki mobilne wymagają wywołania play()
+    // W teorii autoplay powinien działać, ale w praktyce czasem trzeba:
+    // await video.play();
   } catch (error) {
     console.error("Błąd dostępu do kamery:", error);
   }
@@ -33,7 +37,7 @@ async function startCamera() {
 
 
 /******************************************************
- * 3. Rysowanie siatki na canvas
+ * 3. Rysowanie siatki 3x3 na canvas
  ******************************************************/
 function drawGrid() {
   ctx.strokeStyle = '#fff';
@@ -54,41 +58,39 @@ function drawGrid() {
 
 
 /******************************************************
- * 4. Pętla rysowania (render) - przekopiowuje obraz z <video> na <canvas>
+ * 4. Główna pętla (renderFrame)
+ *    Wyświetla na canvasie "ruchomy" obraz z kamery + siatkę
  ******************************************************/
 function renderFrame() {
-  // Wyczyszczenie canvas
+  // Wyczyść canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Narysowanie obrazu z kamery
+  // Narysuj aktualny obraz z kamery na canvasie
   ctx.drawImage(video, 0, 0, cameraWidth, cameraHeight);
 
-  // Narysowanie siatki
+  // Narysuj siatkę
   drawGrid();
 
-  // Kontynuacja pętli
+  // Kontynuuj pętlę
   requestAnimationFrame(renderFrame);
 }
 
 
 /******************************************************
- * 5. Skanowanie koloru z "środkowego okienka"
+ * 5. Funkcja skanująca kolor ze środkowego okienka
  ******************************************************
- * W siatce 3x3 środkowe okno to:
- * - x: 1 * cellSize
- * - y: 1 * cellSize
- * Zrobimy np. próbkę 20x20 pikseli z jego środka.
+ * - Środkowe okno w siatce 3x3 znajduje się w wierszu 1, kolumnie 1 (licząc od 0)
+ * - Zrobię niewielką próbką np. 20×20 px
  ******************************************************/
 function scanCenterColor() {
-  // Środek środkowego okienka
-  const centerX = cellSize + cellSize / 2; // to jest środek kolumny 2
-  const centerY = cellSize + cellSize / 2; // to jest środek wiersza 2
-
-  // Zaznacz, ile pikseli wyciągamy w poziomie/pionie
+  // Pozycja środkowego okienka (lewy górny róg)
+  const centerCellX = 1 * cellSize; // kolumna 1
+  const centerCellY = 1 * cellSize; // wiersz 1
+  
+  // Środek tego okienka (dla próbki 20×20)
   const sampleSize = 20;
-  // Oblicz górny-lewy róg próbki 20x20
-  const startX = centerX - sampleSize / 2;
-  const startY = centerY - sampleSize / 2;
+  const startX = centerCellX + cellSize/2 - sampleSize/2;
+  const startY = centerCellY + cellSize/2 - sampleSize/2;
 
   // Pobierz dane pikseli
   const imageData = ctx.getImageData(startX, startY, sampleSize, sampleSize).data;
@@ -108,10 +110,10 @@ function scanCenterColor() {
   // Konwertuj na HSL
   const [h, s, l] = rgbToHsl(avgR, avgG, avgB);
 
-  // Wyświetl w colorResults
+  // Wyświetl w div#colorResults
   const info = document.createElement('p');
-  info.textContent = `HSL: (${h.toFixed(1)}, ${s.toFixed(1)}, ${l.toFixed(1)}) 
-    / RGB: (${Math.round(avgR)}, ${Math.round(avgG)}, ${Math.round(avgB)})`;
+  info.textContent = `HSL = (${h.toFixed(1)}, ${s.toFixed(1)}, ${l.toFixed(1)}) 
+    | RGB = (${Math.round(avgR)}, ${Math.round(avgG)}, ${Math.round(avgB)})`;
   colorResults.appendChild(info);
 }
 
@@ -134,7 +136,7 @@ function rgbToHsl(r, g, b) {
     s = 0;
   } else {
     const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    s = (l > 0.5) ? d / (2 - max - min) : d / (max + min);
     switch (max) {
       case r:
         h = (g - b) / d + (g < b ? 6 : 0);
@@ -148,14 +150,14 @@ function rgbToHsl(r, g, b) {
     }
     h /= 6;
   }
-  
-  // Skala: h: 0..360, s: 0..100, l: 0..100
+
+  // Przeskaluj do h:0..360, s:0..100, l:0..100
   return [ h * 360, s * 100, l * 100 ];
 }
 
 
 /******************************************************
- * 7. Obsługa przycisku "Skanuj środkowy kolor"
+ * 7. Obsługa przycisku "Skanuj"
  ******************************************************/
 scanButton.addEventListener('click', () => {
   scanCenterColor();
@@ -163,7 +165,7 @@ scanButton.addEventListener('click', () => {
 
 
 /******************************************************
- * 8. Start - uruchom kamerę i zacznij renderowanie
+ * 8. Start: uruchom kamerę i render
  ******************************************************/
 startCamera();
 renderFrame();
