@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Odczyt koloru HSL</title>
+  <style>
+    #camera {
+      display: none; /* Nie pokazuj natywnego <video> - przenosimy obraz na canvas */
+    }
+    #grid {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Odczyt koloru z kamery (HSL)</h1>
+  
+  <!-- Kamera i Canvas -->
+  <video id="camera" autoplay playsinline></video>
+  <canvas id="grid" width="360" height="360"></canvas>
+  
+  <!-- Przycisk do skanowania koloru ze środkowego okienka -->
+  <button id="scanButton">Skanuj środkowy kolor</button>
+  
+  <!-- Miejsce do wyświetlania wyników -->
+  <div id="colorResults"></div>
+  
+  <!-- Główny skrypt z logiką -->
+  <script src="app.js"></script>
+</body>
+</html>
