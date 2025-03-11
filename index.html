@@ -2,10 +2,11 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>Odczyt koloru HSL</title>
+  <title>Odczyt koloru HSL (siatka 3x3)</title>
   <style>
+    /* Ukrywamy natywny element video (obraz i tak rysujemy na canvas) */
     #camera {
-      display: none; /* Nie pokazuj natywnego <video> - przenosimy obraz na canvas */
+      display: none;
     }
     #grid {
       border: 1px solid #ccc;
@@ -14,7 +15,7 @@
 </head>
 <body>
 
-  <h1>Odczyt koloru z kamery (HSL)</h1>
+  <h1>Odczyt koloru z kamery (HSL) - Środkowe okienko</h1>
   
   <!-- Kamera i Canvas -->
   <video id="camera" autoplay playsinline></video>
